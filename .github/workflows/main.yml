@@ -1,0 +1,61 @@
+name: Multi-Project Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'vega-sdk/**'   # Trigger when files in vega-sdk change
+      - 'vega-tools-rv32/**' # Trigger when files in vega-tools-rv32 change
+  workflow_dispatch: # Allows manual trigger from Actions tab
+
+jobs:
+  # --- vega-sdk Job (Documentation) ---
+  vega-sdk-docs:
+    if: contains(github.event.head_commit.modified, 'vega-sdk/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./vega-sdk
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+      - name: Run Doxygen
+        run: doxygen doxygen/Doxyfile
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: vega-sdk/docs/html
+
+  # --- vega-tools-rv32 Job (Build & Test) ---
+  vega-tools-rv32-build:
+    if: contains(github.event.head_commit.modified, 'vega-tools-rv32/') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./vega-tools-rv32
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Environment
+        run: |
+          chmod +x setup-env.sh
+          ./setup-env.sh
+      - name: Toolchain Check
+        run: |
+          ./toolchain/bin/riscv32-vega-elf-gcc --version
+          ./utils/bin2hex --help
+
+  # --- Deployment Job for GitHub Pages ---
+  deploy-pages:
+    needs: vega-sdk-docs
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
