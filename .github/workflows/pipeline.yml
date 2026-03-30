@@ -4,18 +4,18 @@ on:
   push:
     branches: [ "main", "master" ]
     paths:
-      - 'sdk/**'   # Trigger when files in sdk change
-      - 'tools/**' # Trigger when files in tools change
+      - 'vega-sdk/**'   # Trigger when files in vega-sdk change
+      - 'vega-tools-rv32/**' # Trigger when files in vega-tools-rv32 change
   workflow_dispatch: # Allows manual trigger from Actions tab
 
 jobs:
-  # --- SDK Job (Documentation) ---
-  sdk-docs:
-    if: contains(github.event.head_commit.modified, 'sdk/') || github.event_name == 'workflow_dispatch'
+  # --- vega-sdk Job (Documentation) ---
+  vega-sdk-docs:
+    if: contains(github.event.head_commit.modified, 'vega-sdk/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./sdk
+        working-directory: ./vega-sdk
     steps:
       - uses: actions/checkout@v4
       - name: Install Doxygen
@@ -25,15 +25,15 @@ jobs:
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: sdk/docs/html
+          path: vega-sdk/docs/html
 
-  # --- Tools Job (Build & Test) ---
-  tools-build:
-    if: contains(github.event.head_commit.modified, 'tools/') || github.event_name == 'workflow_dispatch'
+  # --- vega-tools-rv32 Job (Build & Test) ---
+  vega-tools-rv32-build:
+    if: contains(github.event.head_commit.modified, 'vega-tools-rv32/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./tools
+        working-directory: ./vega-tools-rv32
     steps:
       - uses: actions/checkout@v4
       - name: Setup Environment
@@ -47,7 +47,7 @@ jobs:
 
   # --- Deployment Job for GitHub Pages ---
   deploy-pages:
-    needs: sdk-docs
+    needs: vega-sdk-docs
     permissions:
       pages: write
       id-token: write
